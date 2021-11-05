@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import moment from 'moment';
 import {AreaChart, Area, Tooltip} from 'recharts';
-import {Box, Button, Flex, Heading, HStack, Text, useToast} from '@chakra-ui/react';
+import {Button, Flex, Heading, HStack, Text, useToast} from '@chakra-ui/react';
 import {getPriceData} from './api';
 
 import './App.css';
@@ -22,7 +22,9 @@ function App() {
   useEffect(() => {
     getPriceData(days)
       .then(data => {
-        setData(data.map(priceData => ({timestamp: priceData[0], price: priceData[1]})));
+        const priceData = data.map(priceData => ({timestamp: priceData[0], price: priceData[1]}));
+        setData(priceData);
+        setActivePrice(priceData[priceData.length - 1]);
       })
       .catch(err => {
         toast({
@@ -33,15 +35,9 @@ function App() {
           isClosable: true,
         });
       });
-  }, [days]);
+  }, [days, toast]);
 
-  // @ts-ignore
-  const CustomTooltip = ({ payload }) => {
-    if (payload.length > 0) {
-      setActivePrice(payload[0].payload);
-    }
-    return null;
-  }
+  if (data.length === 0) return null;
 
   return (
     <Flex flexDirection="column" alignItems="center" justifyContent="center" width="600px" p={10} my={0} mx="auto">
@@ -52,6 +48,7 @@ function App() {
         width={600}
         height={200}
         data={data}
+        onMouseLeave={() => setActivePrice(data[data.length - 1])}
       >
         <defs>
           <linearGradient id="linear" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -68,7 +65,12 @@ function App() {
         />
         <Tooltip
           // @ts-ignore
-          content={<CustomTooltip />}
+          content={({ payload }) => {
+            if (payload && payload.length > 0)
+              setActivePrice(payload[0].payload);
+
+            return null;
+          }}
           cursor={{
             strokeDasharray: "7 7",
             strokeLinecap: "round",
